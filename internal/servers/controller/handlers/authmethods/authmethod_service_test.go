@@ -979,13 +979,13 @@ func TestAuthenticate(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		request  *pbs.AuthenticateRequest
+		request  *pbs.AuthenticateLoginRequest
 		wantType string
 		wantErr  error
 	}{
 		{
-			name: "basic",
-			request: &pbs.AuthenticateRequest{
+			name: "basic creds",
+			request: &pbs.AuthenticateLoginRequest{
 				AuthMethodId: am.GetPublicId(),
 				TokenType:    "token",
 				Credentials: func() *structpb.Struct {
@@ -999,8 +999,64 @@ func TestAuthenticate(t *testing.T) {
 			wantType: "token",
 		},
 		{
+			name: "basic loginpass",
+			request: &pbs.AuthenticateLoginRequest{
+				AuthMethodId: am.GetPublicId(),
+				TokenType:    "token",
+				LoginName:    testLoginName,
+				Password:     testPassword,
+			},
+			wantType: "token",
+		},
+		{
+			name: "creds missing password",
+			request: &pbs.AuthenticateLoginRequest{
+				AuthMethodId: am.GetPublicId(),
+				TokenType:    "token",
+				Credentials: func() *structpb.Struct {
+					creds := map[string]*structpb.Value{
+						"password": {Kind: &structpb.Value_StringValue{StringValue: testPassword}},
+					}
+					return &structpb.Struct{Fields: creds}
+				}(),
+			},
+			wantErr: handlers.ApiErrorWithCode(codes.InvalidArgument),
+		},
+		{
+			name: "creds missing login name",
+			request: &pbs.AuthenticateLoginRequest{
+				AuthMethodId: am.GetPublicId(),
+				TokenType:    "token",
+				Credentials: func() *structpb.Struct {
+					creds := map[string]*structpb.Value{
+						"login_name": {Kind: &structpb.Value_StringValue{StringValue: testLoginName}},
+					}
+					return &structpb.Struct{Fields: creds}
+				}(),
+			},
+			wantErr: handlers.ApiErrorWithCode(codes.InvalidArgument),
+		},
+		{
+			name: "loginpass missing login name",
+			request: &pbs.AuthenticateLoginRequest{
+				AuthMethodId: am.GetPublicId(),
+				TokenType:    "token",
+				Password:     testPassword,
+			},
+			wantErr: handlers.ApiErrorWithCode(codes.InvalidArgument),
+		},
+		{
+			name: "loginpass missing password",
+			request: &pbs.AuthenticateLoginRequest{
+				AuthMethodId: am.GetPublicId(),
+				TokenType:    "token",
+				LoginName:    testLoginName,
+			},
+			wantErr: handlers.ApiErrorWithCode(codes.InvalidArgument),
+		},
+		{
 			name: "cookie-type",
-			request: &pbs.AuthenticateRequest{
+			request: &pbs.AuthenticateLoginRequest{
 				AuthMethodId: am.GetPublicId(),
 				TokenType:    "cookie",
 				Credentials: func() *structpb.Struct {
@@ -1015,7 +1071,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 		{
 			name: "no-token-type",
-			request: &pbs.AuthenticateRequest{
+			request: &pbs.AuthenticateLoginRequest{
 				AuthMethodId: am.GetPublicId(),
 				Credentials: func() *structpb.Struct {
 					creds := map[string]*structpb.Value{
@@ -1028,7 +1084,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 		{
 			name: "bad-token-type",
-			request: &pbs.AuthenticateRequest{
+			request: &pbs.AuthenticateLoginRequest{
 				AuthMethodId: am.GetPublicId(),
 				TokenType:    "email",
 				Credentials: func() *structpb.Struct {
@@ -1043,7 +1099,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 		{
 			name: "no-authmethod",
-			request: &pbs.AuthenticateRequest{
+			request: &pbs.AuthenticateLoginRequest{
 				Credentials: func() *structpb.Struct {
 					creds := map[string]*structpb.Value{
 						"login_name": {Kind: &structpb.Value_StringValue{StringValue: testLoginName}},
@@ -1056,7 +1112,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 		{
 			name: "wrong-password",
-			request: &pbs.AuthenticateRequest{
+			request: &pbs.AuthenticateLoginRequest{
 				AuthMethodId: am.GetPublicId(),
 				TokenType:    "token",
 				Credentials: func() *structpb.Struct {
@@ -1071,7 +1127,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 		{
 			name: "wrong-login-name",
-			request: &pbs.AuthenticateRequest{
+			request: &pbs.AuthenticateLoginRequest{
 				AuthMethodId: am.GetPublicId(),
 				TokenType:    "token",
 				Credentials: func() *structpb.Struct {
@@ -1092,7 +1148,7 @@ func TestAuthenticate(t *testing.T) {
 			s, err := authmethods.NewService(kms, pwRepoFn, iamRepoFn, atRepoFn)
 			require.NoError(err)
 
-			resp, err := s.Authenticate(auth.DisabledAuthTestContext(auth.WithScopeId(o.GetPublicId())), tc.request)
+			resp, err := s.AuthenticateLogin(auth.DisabledAuthTestContext(auth.WithScopeId(o.GetPublicId())), tc.request)
 			if tc.wantErr != nil {
 				assert.Error(err)
 				assert.Truef(errors.Is(err, tc.wantErr), "Got %#v, wanted %#v", err, tc.wantErr)

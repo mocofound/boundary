@@ -180,7 +180,11 @@ message AuthenticateLoginRequest {
   // This can be "cookie" or "token". If not provided, "token" will be used. "cookie" activates a split-cookie method where the token is split partially between http-only and regular cookies in order to keep it safe from rogue JS in the browser.
   string token_type = 2 [json_name="token_type"];
   // Credentials are passed to the Auth Method; the valid keys and values depend on the type of Auth Method.
-  google.protobuf.Struct credentials = 3;
+  google.protobuf.Struct credentials = 3 [deprecated=true];
+  // The login name to use for authentication.
+  string login_name = 4 [json_name="login_name"];
+  // The password to use for authentication.
+  string password = 5 [json_name="password"];
 }
 
 message AuthenticateLoginResponse {

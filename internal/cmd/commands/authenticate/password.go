@@ -128,11 +128,11 @@ func (c *PasswordCommand) Run(args []string) int {
 	// note: Authenticate() calls SetToken() under the hood to set the
 	// auth bearer on the client so we do not need to do anything with the
 	// returned token after this call, so we ignore it
-	result, err := authmethods.NewClient(client).Authenticate(c.Context, c.FlagAuthMethodId,
-		map[string]interface{}{
-			"login_name": c.flagLoginName,
-			"password":   c.flagPassword,
-		})
+	result, err := authmethods.NewClient(client).AuthenticatePassword(
+		c.Context,
+		c.FlagAuthMethodId,
+		c.flagLoginName,
+		c.flagPassword)
 	if err != nil {
 		if apiErr := api.AsServerError(err); apiErr != nil {
 			c.PrintApiError(apiErr, "Error from controller when performing authentication")

@@ -278,8 +278,7 @@ func (s Service) AuthenticateLogin(ctx context.Context, req *pbs.AuthenticateLog
 	if authResults.Error != nil {
 		return nil, authResults.Error
 	}
-	creds := req.GetCredentials().GetFields()
-	tok, err := s.authenticateWithRepo(ctx, authResults.Scope.GetId(), req.GetAuthMethodId(), creds[loginNameKey].GetStringValue(), creds[pwKey].GetStringValue())
+	tok, err := s.authenticateWithRepo(ctx, authResults.Scope.GetId(), req.GetAuthMethodId(), req.GetLoginName(), req.GetPassword())
 	if err != nil {
 		return nil, err
 	}
@@ -657,15 +656,20 @@ func validateAuthenticateLoginRequest(req *pbs.AuthenticateLoginRequest) error {
 	} else if !handlers.ValidId(password.AuthMethodPrefix, req.GetAuthMethodId()) {
 		badFields["auth_method_id"] = "Invalid formatted identifier."
 	}
-	if req.GetCredentials() == nil {
-		badFields["credentials"] = "This is a required field."
+	if req.GetLoginName() == "" && req.GetPassword() == "" && req.GetCredentials() != nil {
+		creds := req.GetCredentials().GetFields()
+		if loginName, ok := creds[loginNameKey]; ok {
+			req.LoginName = loginName.GetStringValue()
+		}
+		if password, ok := creds[pwKey]; ok {
+			req.Password = password.GetStringValue()
+		}
 	}
-	creds := req.GetCredentials().GetFields()
-	if _, ok := creds[loginNameKey]; !ok {
-		badFields["credentials.login_name"] = "This is a required field."
+	if req.GetLoginName() == "" {
+		badFields["login_name"] = "This is a required field."
 	}
-	if _, ok := creds[pwKey]; !ok {
-		badFields["credentials.password"] = "This is a required field."
+	if req.GetPassword() == "" {
+		badFields["password"] = "This is a required field."
 	}
 	tType := strings.ToLower(strings.TrimSpace(req.GetTokenType()))
 	if tType != "" && tType != "token" && tType != "cookie" {

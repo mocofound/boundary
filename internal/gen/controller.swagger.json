@@ -3782,6 +3782,14 @@
         "credentials": {
           "type": "object",
           "description": "Credentials are passed to the Auth Method; the valid keys and values depend on the type of Auth Method."
+        },
+        "login_name": {
+          "type": "string",
+          "description": "The login name to use for authentication."
+        },
+        "password": {
+          "type": "string",
+          "description": "The password to use for authentication."
         }
       }
     },

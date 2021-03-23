@@ -7,6 +7,10 @@ import (
 	"github.com/hashicorp/boundary/api/authtokens"
 )
 
+// NOTE: Authenticate is deprecated and will be removed. It will likely make an
+// appearance in a future in which Boundary supports authentication plugins, but
+// for built-in authentication workflows, strongly typed fields will be used
+// instead.
 func (c *Client) Authenticate(ctx context.Context, authMethodId string, credentials map[string]interface{}, opt ...Option) (*authtokens.AuthTokenReadResult, error) {
 	if c.client == nil {
 		return nil, fmt.Errorf("nil client in Authenticate request")
